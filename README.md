@@ -42,7 +42,8 @@ During my analysis, all of the samples I found were Microsoft Word documents in 
 
 Within oleObject1.bin is the embedded object. Since this file is in the ole file format it will need to parsed using a tool such as [olefile](https://github.com/decalage2/olefile).  Within the ole stream is a record named `\x01Ole10Native`. This stream contains information about the embedded object along with the embedded stream. The following figure is a hexdump with notable fields labeled.  The field names are not the correct Microsoft labels. I was unable to find these fields documented. 
 
-FIGURE 1 
+
+![figure1](res/olenative.png)
 
 The fields `label`, `file path` and `command` are unique because when analyzing malicious documents it is not very common to recover details about the host or even command names being. To extract the native data and fields I wrote a script named `oleNativeCarve.py`.  As of right now, it can be executed by double clicking on it or you can call `carve_ole_native(file_path, debug=False`. The first argument is the file path and the second argument is optional, which prints some basic debug information. The script saves all carved files to the working directory. The carved files will have a naming convention of `SHA256.bin`.  Details about the carved file will be stored in a file named `SHA256.json`. Below is the output from an example JSON. 
 
@@ -78,7 +79,7 @@ D:\userdata\e0368301\Desktop\debug\LogCollection\Official\tools.zip C:\Users\e03
 D:\userdata\e0368301\Desktop\T_Trs_Client.zip C:\Users\e0368301\AppData\Local\Temp\T_Trs_Client.zip T_Trs_Client.zip
 D:\REMOVED_UNICODE_\SkymonkUploader.exe C:\Users\Stranger\AppData\Local\Temp\SkymonkUploader.exe SkymonkUploader.exe
 E:\3d\Result.exe C:\Users\Art\AppData\Local\Temp\Result.exe Result.exe
-E:\TEMP\G\01.11.16\httpchallengegx.topvaginapussysso5sok.php\Invoice ¹9840018.lnk C:\Users\azaz\AppData\Local\Temp\Invoice ¹9840018.lnk Invoice ¹9840018
+E:\TEMP\G\01.11.16\httpchallengegx.topvaginapussysso5sok.php\Invoice 9840018.lnk C:\Users\azaz\AppData\Local\Temp\Invoice 9840018.lnk Invoice 9840018
 E:\TEMP\office\de\turpentinet\Faktur Nr. 08412.lnk C:\Users\Office\AppData\Local\Temp\Faktur Nr. 08412.lnk Faktur Nr. 08412
 F:\2.wsf C:\Users\admin\AppData\Local\Temp\2.wsf 2.wsf
 F:\_Kit\foliant\106\AdobeReaderPlugin.scr c:\Temp\AdobeReaderPlugin.scr AdobeReaderPlugin.scr
@@ -146,10 +147,9 @@ E:\TEMP\G\26.10.16_lnk\de\http57vinodpatel.topnazarethanimalslisten.php\Rechnung
 E:\TEMP\G\25.10.16\EN\httpgordonlevy.infofedappidp.php\Decoder.vbs
 E:\TEMP\G\18.11.16\ch1\pelikan\Beleg Nr. 892234-31.lnk
 E:\TEMP\G\10.11.16\ch\varietiesxl\Rechnung Nr. 8002301-1.lnk
-E:\TEMP\G\10.11.16\uk\distributionde\Invoice ¹9010169.lnk
+E:\TEMP\G\10.11.16\uk\distributionde\Invoice 9010169.lnk
 E:\TEMP\G\10.11.16\ch\meanwhiledm\Rechnung Nr. 8002301-1.lnk
-E:\TEMP\G\01.11.16\httpchallengegx.topvaginapussysso5sok.php\Invoice ¹9840018.lnk
+E:\TEMP\G\01.11.16\httpchallengegx.topvaginapussysso5sok.php\Invoice 9840018.lnk
 E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK
 ```
-The child folder appears to be named after the URL that is hosting the second stage. For example. the last path of `E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK`This path is from a Word document named `Rechn. Nr. 2016.11. #18989.docx` with a SHA256 hash of `d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf`. On  November 21st 2016 someone uploaded the file to [reverse.it](https://www.reverse.it/sample/d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf?environmentId=100&lang=en). This is the same date as shown in the folder path `E:\TEMP\G\21.11.16`.  When the Word Documented is opened it will open an .LNK file which writes a PowerShell script that downloads an executable from `http://jetravaille-et-jetaide.ch/resellers/web/request-a-callback.php`. This URL is the name of folder that `Beleg Nr. 832777-99.LNK` is stored in.  The downloaded payload with a SHA256 hash of `adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a` has been [identified](https://www.virustotal.com/en/file/adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a/analysis/) as Dridex.  
-
+The child folder appears to be named after the URL that is hosting the second stage. For example. the last path of `E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK`This path is from a Word document named `Rechn. Nr. 2016.11. #18989.docx` with a SHA256 hash of `d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf`. On  November 21st 2016 someone uploaded the file to [reverse.it](https://www.reverse.it/sample/d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf?environmentId=100&lang=en). This is the same date as shown in the folder path `E:\TEMP\G\21.11.16`.  When the Word Documented is opened it will open an .LNK file which writes a PowerShell script that downloads an executable from `http://jetravaille-et-jetaide.ch/resellers/web/request-a-callback.php`. This URL is the name of folder that `Beleg Nr. 832777-99.LNK` is stored in.  The downloaded payload with a SHA256 hash of `adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a` has been [identified](https://www.virustotal.com/en/file/adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a/analysis/) as Dridex.
