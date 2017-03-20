@@ -237,6 +237,7 @@ Below are the most common files extensions sorted from highest to lowest.
 ```
 'scr': 223, 'js': 206, 'lnk': 116, 'jar': 79, 'exe': 79, 'vbs': 57, 'JAR': 34, 'zip': 11, 'cab': 7, 'pdf': 5, 'bat': 5, 'com': 5, 'jse': 3, 'wsf': 3, '7z': 2, 'txt': 'vbe': 2, 'Tar': 1, 'ace': 1, 
 ```
+Most of the files I analyzed had been uploaded to VirusTotal within the past six months. It is strange to see so many Java .JAR files. 
 
 #### File Names 
 Below are the most common file names sorted from highest to lowest. Unique file names have been removed. 
@@ -347,6 +348,9 @@ E:\TEMP\G\01.11.16\httpchallengegx.topvaginapussysso5sok.php\Invoice 9840018.lnk
 E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK
 ```
 The child folder appears to be named after the URL that is hosting the second stage. For example. the last path of `E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK`This path is from a Word document named Rechn. Nr. 2016.11. #18989.docx with a SHA256 hash of d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf. On  November 21st 2016 someone uploaded the file to [reverse.it](https://www.reverse.it/sample/d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf?environmentId=100&lang=en). This is the same date as shown in the folder path `E:\TEMP\G\21.11.16`.  When the Word Documented is opened it will open an .LNK file which writes a PowerShell script that downloads an executable from `http://jetravaille-et-jetaide.ch/resellers/web/request-a-callback.php`. This URL is the name of folder that Beleg Nr. 832777-99.LNK is stored in.  The downloaded payload with a SHA256 hash of adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a has been [identified](https://www.virustotal.com/en/file/adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a/analysis/) as Dridex. I think this is pretty cool! Even if they are minor details, it is still interesting to learn or speculate how threat actors operate. 
+
+#### Data
+The 870 JSONs I used for my analysis can be found [here](json/).
 
 #### References
 * https://code.msdn.microsoft.com/office/CSOfficeDocumentFileExtract-e5afce86
