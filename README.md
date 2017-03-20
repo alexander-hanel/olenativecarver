@@ -1,4 +1,4 @@
-## Exploring OLE10Native streams within malicious Microsoft Word documents. 
+## Exploring OLE10Native streams within malicious Microsoft Word documents
 
 In the past year embedding executable code within Word documents has become more prevalent. Microsoft wrote an excellent [article](https://blogs.technet.microsoft.com/mmpc/2016/06/14/wheres-the-macro-malware-author-are-now-using-ole-embedding-to-deliver-malicious-files/) about the rise of this technique back in June 2016. Microsoft mentions some technical details of the payload but didn't dive into how the objects were embedded. Recently while coding  a carver for embedded OLE10Native objects, I came across some artifacts that I thought were interesting.
 
