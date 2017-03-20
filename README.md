@@ -1,8 +1,8 @@
 ## Exploring OLE10Native streams within malicious Microsoft Word documents
 
-In the past year embedding executable code within Word documents has become more prevalent. Microsoft wrote an excellent [article](https://blogs.technet.microsoft.com/mmpc/2016/06/14/wheres-the-macro-malware-author-are-now-using-ole-embedding-to-deliver-malicious-files/) about the rise of this technique back in June 2016. Recently while coding  a carver for embedded OLE10Native objects, I came across some artifacts that I thought were interesting.
+In the past year embedding executable code within Word documents has become more prevalent. Microsoft wrote an excellent [article](https://blogs.technet.microsoft.com/mmpc/2016/06/14/wheres-the-macro-malware-author-are-now-using-ole-embedding-to-deliver-malicious-files/) about the rise of this technique back in June 2016. Recently while coding  a carver for embedded OLE10Native streams, I came across some artifacts that I thought were interesting.
 
-Native data stored in a Microsoft Office document is stored in a stream object named `\1Ole10Native`. The stored data could be a Visual Basic Script (.VBS), executable (.exe) or a .LNK file are known as [embedded objects](https://msdn.microsoft.com/en-us/library/windows/desktop/ms679749(v=vs.85).aspx).  I'd like to note that there are many different type of embedded objects and streams. `\1Ole10Native` is just one type used to store native data that was copied and pasted or dragged and dropped into a document.  Extracting OLE10Native objects within Word documents can be done with the following steps. 
+Native data stored in a Microsoft Office document is stored in a stream object named `\1Ole10Native`. The stored data could be a Visual Basic Script (.VBS), executable (.exe) or a .LNK fil. The data is known as [embedded objects](https://msdn.microsoft.com/en-us/library/windows/desktop/ms679749(v=vs.85).aspx).  I'd like to note that there are many different type of embedded objects and streams. `\1Ole10Native` is just one type used to store native data that was copied and pasted or dragged and dropped into a document.  Extracting OLE10Native objects within Word documents can be done with the following steps. 
 
  1. The documents needs to be unzipped.
  2. The OLE Compound File Binary Format needs to be read.
@@ -45,13 +45,13 @@ Within oleObject1.bin is the embedded object. Since this file is in the ole file
 
 ![figure1](res/olenative.png)
 
-The fields `label`, `file path` and `command` are unique because when analyzing malicious documents it is not very common to recover details about the host or even command names being. To extract the native data and fields I wrote a script named `oleNativeCarve.py`.  As of right now, it can be executed by double clicking on it or you can call `carve_ole_native(file_path, debug=False`. The first argument is the file path and the second argument is optional, which prints some basic debug information. The script saves all carved files to the working directory. The carved files will have a naming convention of `SHA256.bin`.  Details about the carved file will be stored in a file named `SHA256.json`. Below is the output from an example JSON. 
+The fields `label`, `file path` and `command` are unique because when analyzing malicious documents it is not very common to recover details about the host or even command names being. To extract the native data and fields I wrote a script named oleNativeCarve.py.  As of right now, it can be executed by double clicking on it or you can call `carve_ole_native(file_path, debug=False`. The first argument is the file path and the second argument is optional, which prints some basic debug information. The script saves all carved files to the working directory. The carved files will have a naming convention of `SHA256.bin`.  Details about the carved file will be stored in a file named `SHA256.json`. Below is the output from an example JSON. 
 
 ```
 {"native_data_size": 581723, "parent_sha256": "e635400d56049f8ee3f26e372f87c90816c48f73d114cab1bef78a5ed2a1df3a", "flags1": 2, "flags2": 0, "unknown": 0, "label": "www.revenueads.com", "unknown2": 3, "unknown3": null, "command": "C:\\Users\\Admin\\AppData\\Local\\Temp\\www.revenueads.com", "sha256": "c5d19edc4187c936682e5ab45a2cb99724d447a1d68f914fce5ccfdd25c8e53f", "file_path": "C:\\Users\\Admin\\Desktop\\www.revenueads.com", "size": 582085}
 ```
 
-The parent file that contained the `\x01Ole10Native` stream has a hash of `e635400d56049f8ee3f26e372f87c90816c48f73d114cab1bef78a5ed2a1df3a`. The native data within the stream has a hash of `c5d19edc4187c936682e5ab45a2cb99724d447a1d68f914fce5ccfdd25c8e53f`. The stream was saved to a file named `c5d19edc4187c936682e5ab45a2cb99724d447a1d68f914fce5ccfdd25c8e53f.bin` and the JSON data was stored in a file named `c5d19edc4187c936682e5ab45a2cb99724d447a1d68f914fce5ccfdd25c8e53f.json`. The field `sha256` is the hash of the carved file, `parent_sha256` is the hash of the parent file that the binary and json were extracted from.  Below is the full code for the `oleNativeCarve.py`. In case I forget to update this page, I would recommend cloning the repo or downloading the code from [here](src/oleNativeCarve.py).
+The parent file that contained the `\x01Ole10Native` stream has a hash of `e635400d56049f8ee3f26e372f87c90816c48f73d114cab1bef78a5ed2a1df3a`. The native data within the stream has a hash of `c5d19edc4187c936682e5ab45a2cb99724d447a1d68f914fce5ccfdd25c8e53f`. The stream was saved to a file named c5d19edc4187c936682e5ab45a2cb99724d447a1d68f914fce5ccfdd25c8e53f.bin and the JSON data was stored in a file named c5d19edc4187c936682e5ab45a2cb99724d447a1d68f914fce5ccfdd25c8e53f.json. The field `sha256` is the hash of the carved file, `parent_sha256` is the hash of the parent file that the binary and json were extracted from.  Below is the full code for the oleNativeCarve.py. In case I forget to update this page, I would recommend cloning the repo or downloading the code from [here](src/oleNativeCarve.py).
 
 ```
 """
@@ -230,7 +230,7 @@ for name in glob.glob('*'):
     carve_ole_native(name, debug=False) 
 ```
 
-Each document with an `\x01Ole10Native` stream contains little details. These details could be file types, mounted drives, folder structures and even commands. This might seem useless but it hints at how the attackers work and their infrastructure. It isn't actionable intelligence but it still interesting.  In order to explore this topic I downloaded close to 2000 samples from VirusTotal that matched a custom search. I then ran `oleNativeCarve.py` in the directory that I downloaded the samples to. `oleNativeCarve.py` was able to carve out 871 files. Now lets explore those details extracted from the `\x01Ole10Native` stream.
+Each document with an `\x01Ole10Native` stream contains little details. These details could be file types, mounted drives, folder structures and even commands. This might seem useless but it hints at how the attackers work and their infrastructure. It isn't actionable intelligence but it still interesting.  In order to explore this topic I downloaded close to 2000 samples from VirusTotal that matched a custom search. I then ran oleNativeCarve.py in the directory that I downloaded the samples to. oleNativeCarve.py was able to carve out 871 files. Now lets explore those details extracted from the `\x01Ole10Native` stream.
 
 #### File Types 
 Below are the most common files extensions sorted from highest to lowest. 
@@ -299,7 +299,7 @@ Icon Location: %SystemRoot%\system32\SHELL32.dll
 
 
 #### Campaigns
-As demonstrated in the file types and file names section above the Adobe `.scr` files were the most common. They use mounted drives, a folder depth of three and the child folder using an integer as the name. The folder names are likely affiliates ids. All of the `.scr` files have unique hashes. 
+As demonstrated in the file types and file names section above the Adobe .scr files were the most common. They use mounted drives, a folder depth of three and the child folder using an integer as the name. The folder names are likely affiliates ids. All of the .scr files have unique hashes. 
 ```
 F:\_Kit\foliant\11\AdobeReaderPlugin.scr 
 F:\_Kit\foliant\134\AdobeReaderPlugin.scr 
@@ -321,7 +321,7 @@ X:\rayban\uniqo\89\AdobeReaderPlugin.scr
 ``` 
 All of `command` fields contain the same path  of `c:\Temp\AdobeReaderPlugin.scr` except for `F:\_Kit\foliant\54\AdobeReaderPlugin.scr`  It's `command` path is  `C:\Users\VASILE~1\AppData\Local\Temp\AdobeReaderPlugin`. 
 
-The last campaign is by far my favorite find. It appears to be a part of Dridex's distribution. The attackers use a mounted drive with a structure of `E:\TEMP\G\Day.Month.Year\country\campaign\payload`.  The `country` folder is not present through out the folder paths. The targeted country codes are `en` (Estonia), `ch` (Switzerland) and `UK` (United Kingdom) and `de` (Germany). Here is the full list of paths I was able to recover. 
+The last campaign is by far my favorite find. It appears to be a part of Dridex's distribution. The attackers use a mounted drive with a structure of `E:\TEMP\G\Day.Month.Year\country\campaign\payload`.  The country folder is not present through out the folder paths. The targeted country codes are `en` (Estonia), `ch` (Switzerland) and `UK` (United Kingdom) and `de` (Germany). Here is the full list of paths I was able to recover. 
  
 ```
 E:\TEMP\G\28.10.16\en\httphts-ag.topdedbombomplus100500.php\Invoice No. 8234144-1.lnk
@@ -346,8 +346,8 @@ E:\TEMP\G\10.11.16\ch\meanwhiledm\Rechnung Nr. 8002301-1.lnk
 E:\TEMP\G\01.11.16\httpchallengegx.topvaginapussysso5sok.php\Invoice 9840018.lnk
 E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK
 ```
-The child folder appears to be named after the URL that is hosting the second stage. For example. the last path of `E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK`This path is from a Word document named `Rechn. Nr. 2016.11. #18989.docx` with a SHA256 hash of `d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf`. On  November 21st 2016 someone uploaded the file to [reverse.it](https://www.reverse.it/sample/d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf?environmentId=100&lang=en). This is the same date as shown in the folder path `E:\TEMP\G\21.11.16`.  When the Word Documented is opened it will open an .LNK file which writes a PowerShell script that downloads an executable from `http://jetravaille-et-jetaide.ch/resellers/web/request-a-callback.php`. This URL is the name of folder that `Beleg Nr. 832777-99.LNK` is stored in.  The downloaded payload with a SHA256 hash of `adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a` has been [identified](https://www.virustotal.com/en/file/adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a/analysis/) as Dridex.
-
+The child folder appears to be named after the URL that is hosting the second stage. For example. the last path of `E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK`This path is from a Word document named Rechn. Nr. 2016.11. #18989.docx with a SHA256 hash of d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf. On  November 21st 2016 someone uploaded the file to [reverse.it](https://www.reverse.it/sample/d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf?environmentId=100&lang=en). This is the same date as shown in the folder path `E:\TEMP\G\21.11.16`.  When the Word Documented is opened it will open an .LNK file which writes a PowerShell script that downloads an executable from `http://jetravaille-et-jetaide.ch/resellers/web/request-a-callback.php`. This URL is the name of folder that Beleg Nr. 832777-99.LNK is stored in.  The downloaded payload with a SHA256 hash of adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a has been [identified](https://www.virustotal.com/en/file/adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a/analysis/) as Dridex. 
+ 
 
 #### References
 * https://code.msdn.microsoft.com/office/CSOfficeDocumentFileExtract-e5afce86
