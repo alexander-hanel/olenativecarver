@@ -1,6 +1,8 @@
 """
     Name:           oleNativeCarve.py
     Author:         Alexander Hanel
+    Version:        1.2
+    Date:           20170516
     Description:    Extracts embedded objects from olenative records.
                     The extracted object will be saved as SHA256.bin with a corresponding file named
                     SHA256.json that contains information about the extracted
@@ -38,6 +40,8 @@ import zipfile
 
 class olenative():
     def __init__(self, data):
+        self.success = False
+        self.error = ""
         self.size = int
         self.flags1 = None
         self.label = str
@@ -73,35 +77,41 @@ class olenative():
 
     def parse_ole_native(self, data):
         """ parses olenative structure"""
-        # get size
-        self.size = struct.unpack('<L', data[0:4])[0]
-        data = data[4:]
-        # get flag1, typically a hardcoded value of 02 00
-        self.flags1 = struct.unpack('<H', data[0:2])[0]
-        data = data[2:]
-        # get label aka name of the embedded file. label is a string of unknown length
-        self.label = data[:data.find('\0')]
-        # calculate length of string label1
-        data = data[len(self.label) + 1:]
-        # get file name
-        self.file_path = data[:data.find('\0')]
-        data = data[len(self.file_path):]
-        # get flag2
-        self.flags2 = struct.unpack('<H', data[0:2])[0]
-        data = data[2:]
-        self.unknown = struct.unpack('<B', data[0:1])[0]
-        data = data[1:]
-        self.unknown2 = struct.unpack('<B', data[0:1])[0]
-        # skipping four bytes not sure what they are
-        data = data[6:]
-        self.command = data[:data.find('\0')]
-        data = data[len(self.command) + 1:]
-        self.native_data_size = struct.unpack('<L', data[0:4])[0]
-        data = data[4:]
-        self.native_data = data[:self.native_data_size]
-        sha = hashlib.sha256()
-        sha.update(self.native_data)
-        self.sha256 = sha.hexdigest()
+        try:
+            # get size
+            self.size = struct.unpack('<L', data[0:4])[0]
+            data = data[4:]
+            # get flag1, typically a hardcoded value of 02 00
+            self.flags1 = struct.unpack('<H', data[0:2])[0]
+            data = data[2:]
+            # get label aka name of the embedded file. label is a string of unknown length
+            self.label = data[:data.find('\0')]
+            # calculate length of string label1
+            data = data[len(self.label) + 1:]
+            # get file name
+            self.file_path = data[:data.find('\0')]
+            data = data[len(self.file_path):]
+            # get flag2
+            self.flags2 = struct.unpack('<H', data[0:2])[0]
+            data = data[2:]
+            self.unknown = struct.unpack('<B', data[0:1])[0]
+            data = data[1:]
+            self.unknown2 = struct.unpack('<B', data[0:1])[0]
+            # skipping four bytes not sure what they are
+            data = data[6:]
+            self.command = data[:data.find('\0')]
+            data = data[len(self.command) + 1:]
+            self.native_data_size = struct.unpack('<L', data[0:4])[0]
+            data = data[4:]
+            self.native_data = data[:self.native_data_size]
+            sha = hashlib.sha256()
+            sha.update(self.native_data)
+            self.sha256 = sha.hexdigest()
+        except Exception as e:
+            self.success = False
+            self.error = e 
+            return 
+        self.success = True 
 
 
 def carve_ole_native(file_path, debug=True):
@@ -111,9 +121,7 @@ def carve_ole_native(file_path, debug=True):
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             hash_sha256.update(chunk)
-
     dir_path = tempfile.mkdtemp()
-
     try:
         with zipfile.ZipFile(file_path, "r") as zip_ref:
             zip_ref.extractall(dir_path)
@@ -140,18 +148,30 @@ def carve_ole_native(file_path, debug=True):
                 # An Ole10Native record which is wrapped around certain binary files being embedded in OLE2 documents.
                 if ole.exists('\x01Ole10Native'):
                     ole_native = ole.openstream('\x01Ole10Native').read()
+                    # check for empty olenative streams
+                    if len(ole_native) == 0:
+                        continue
+                    # parse olenative stream 
                     ole_class = olenative(ole_native)
-                    ole_class.parent_sha256 = hash_sha256.hexdigest()
-                    # write binary data
-                    name_bin = ole_class.sha256 + ".bin"
-                    with open(name_bin, "wb") as outfile:
-                        outfile.write(ole_class.native_data)
-                    # write JSON
-                    name_json = ole_class.sha256 + ".json"
-                    with open(name_json, "wb") as jsonout:
-                        json.dump(ole_class.return_dict(), jsonout, encoding='latin1')
-                    out_files.append((name_bin, name_json))
-                    shutil.rmtree(oledir)
+                    if ole_class.success:
+                        ole_class.parent_sha256 = hash_sha256.hexdigest()
+                        # write binary data
+                        name_bin = ole_class.sha256 + ".bin"
+                        root_path = os.path.dirname(os.path.abspath(file_path))
+                        path_name_bin = os.path.join(root_path, name_bin)
+                        with open(path_name_bin, "wb") as outfile:
+                            outfile.write(ole_class.native_data)
+                        # write JSON
+                        name_json = ole_class.sha256 + ".json"  
+                        path_name_json = os.path.join(root_path, name_json)
+                        with open(path_name_json, "wb") as jsonout:
+                            json.dump(ole_class.return_dict(), jsonout, encoding='latin1')
+                        out_files.append((path_name_bin, path_name_json))
+                        shutil.rmtree(oledir)
+                    else:
+                        if debug:
+                            print "Error Could not parse OleNative %s" % (hash_sha256.hexdigest())
+                            print "Path: %s" % olepath
                 else:
                     if debug:
                         print "%s \x01Ole10Native is not present" % (hash_sha256.hexdigest())
@@ -162,13 +182,6 @@ def carve_ole_native(file_path, debug=True):
         shutil.rmtree(dir_path)
     except Exception as e:
         if debug:
-            print e
+            print "Delete Folder Error: %s " % e
 
     return out_files
-
-
-# debug
-import glob
-
-for name in glob.glob('*'):
-    carve_ole_native(name, debug=False)
